@@ -4,7 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-URL_DISCORD = "https://discord.com/api/webhooks/1461802698587373744/4I5FFehiroW9Ra4hBFTW_gVXKZWoSQYAc2zxAvisyhrNWbAVB1ScJZr1rKVdtDMrSKMK  "
+URL_DISCORD = "https://discord.com/api/webhooks/1461802698587373744/4I5FFehiroW9Ra4hBFTW_gVXKZWoSQYAc2zxAvisyhrNWbAVB1ScJZr1rKVdtDMrSKMK"
 
 def alerte(txt):
     requests.post(URL_DISCORD, json={"content": txt})
@@ -40,6 +40,5 @@ def publier():
     return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
-    alerte("🚀 **Serveur Tekis41 en ligne !**")
+    alerte("🚀 Serveur Tekis41 en ligne !")
     app.run(host='0.0.0.0', port=10000)
-
