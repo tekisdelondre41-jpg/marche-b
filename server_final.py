@@ -4,7 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-URL_DISCORD = "https://discord.com/api/webhooks/1461778274698133826/yddifNr8KNH3CTB3TlrcpJwgwOD5U3TfkPcODzvaTQrT4_yhFThulcWfTVRt6PwCtmLo"
+URL_DISCORD = "https://discord.com/api/webhooks/1461802698587373744/4I5FFehiroW9Ra4hBFTW_gVXKZWoSQYAc2zxAvisyhrNWbAVB1ScJZr1rKVdtDMrSKMK  "
 
 def alerte(txt):
     requests.post(URL_DISCORD, json={"content": txt})
