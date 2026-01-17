@@ -4,8 +4,7 @@ from flask import Flask
 app = Flask(__name__)
 
 # Ton URL exacte vérifiée sur ton image 50315
-URL_DISCORD = "https://discord.com/api/webhooks/1461814425370497239/rfojjgyhsACy7B1OkjOKGf5CqqyxQzX3CLQwoaaT_WSClgpoNZcWo35TCd_fbH33qvF_"
-
+URL_DISCORD = "https://discord.com/api/webhooks/1462030820028973170/7KywKTHh7yCuWdMS4ztWJma5hnpLwLGqSW7nuo_eknmj_XAG972K6FWGCh4RjWJh0j3F"
 def envoyer_discord(message):
     try:
         # Cette ligne envoie réellement le message à Discord
