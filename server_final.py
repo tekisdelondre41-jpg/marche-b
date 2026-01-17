@@ -16,12 +16,13 @@ def inscription():
         numero = data.get("numero", "Inconnu")
         achat = data.get("achat", "Inconnu")
         
-        message = f"🚀 **Nouvelle commande !**\n📞 Numéro : {numero}\n👟 Article : {achat}"
-        requests.post(URL_DISCORD, json={"content": message})
+        # Le 'f' devant les guillemets est obligatoire :
+        contenu = f"🚀 **Nouvelle commande !**\n📞 Numéro : {numero}\n👟 Article : {achat}"
         
+        requests.post(URL_DISCORD, json={"content": contenu})
         return jsonify({"status": "succès"}), 200
-    except:
-        return jsonify({"status": "erreur"}), 400
+    except Exception as e:
+        return jsonify({"status": "erreur", "message": str(e)}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
