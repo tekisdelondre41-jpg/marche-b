@@ -1,56 +1,43 @@
+import os
 from flask import Flask, request, jsonify
 import requests
-import os
 
 app = Flask(__name__)
 
-API_KEY = os.getenv("ESCANOR_KEY", "TON_CODE_SECRET")
-WEBHOOK_BOUTIQUE = os.getenv("WEBHOOK_BOUTIQUE")
-WEBHOOK_SPECIAL = os.getenv("WEBHOOK_SPECIAL")
-WEBHOOK_LOGS = os.getenv("WEBHOOK_LOGS")
+# --- CONFIGURATION AUTOMATIQUE ---
+WEBHOOKS = {
+    "COMMANDE": "https://discord.com/api/webhooks/1462097772353421537/EtSxGaWGRPbn6wOH_a14if5XWaKD52aovBHJLz1gpxCVGuX4PwwogxlTy2v-Z74pfayR",
+    "ALERTE": "https://discord.com/api/webhooks/1462098199576842468/9Ty7sTNkj9SJLuyvl71sSKY3_IajGgFtL5QftLqKTGO2TfdyMQyCKGgcEXhk3M74vawp",
+    "LOG": "https://discord.com/api/webhooks/1462099070356164469/XFaaqy3Q3V-nevi1scEHIW7a1z1E-09uq5t6WLjXxPY61h6VtEvl3b-WWe_yX4Z8PAJE"
+}
 
-messages_fantomes = []
+SECRET_KEY = "ESCANOR_2024" # Ton nouveau code secret unique
 
 @app.route('/')
 def home():
-    return "🛡️ Escanor System Online"
+    return "Système Escanor : Opérationnel", 200
 
-@app.route('/gate', methods=['GET', 'POST'])
+@app.route('/gate', methods=['POST'])
 def gate():
+    auth_key = request.headers.get('X-Escanor-Auth')
+    if auth_key != SECRET_KEY:
+        return "Erreur d'authentification", 403
+
     try:
-        if request.method == 'GET':
-            return "Sneakers Limited,150€,https://via.placeholder.com/150\n", 200
-
-        client_key = request.headers.get("X-Escanor-Auth")
-        if client_key != API_KEY:
-            return "Forbidden", 403
-
         data = request.get_json()
-        if not data:
-            return "Bad Request", 400
+        user = data.get('x', 'Inconnu')
+        msg_type = data.get('y', 'LOG')
+        content = data.get('z', '')
 
-        type_msg = data.get("type")
-        user = str(data.get("user", "Anonyme"))[:30]
-        content = str(data.get("content", ""))[:1000]
-
-        payload = {"content": f"**[{type_msg.upper()}]** | {user}: {content}"}
+        target_webhook = WEBHOOKS.get(msg_type, WEBHOOKS["LOG"])
         
-        target = WEBHOOK_LOGS
-        if type_msg == "achat": target = WEBHOOK_BOUTIQUE
-        elif type_msg == "special": target = WEBHOOK_SPECIAL
+        message = f"**[{msg_type}]**\n👤 Utilisateur : {user}\n📝 Info : {content}"
+        requests.post(target_webhook, json={"content": message})
         
-        if target:
-            requests.post(target, json=payload, timeout=5)
-
-        if type_msg == "chat":
-            messages_fantomes.append({"u": user, "m": content})
-            if len(messages_fantomes) > 15:
-                messages_fantomes.pop(0)
-
-        return jsonify({"status": "ok", "chat": messages_fantomes}), 200
-
+        return jsonify({"status": "envoyé"}), 200
     except:
-        return "Error", 500
+        return jsonify({"status": "erreur"}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
