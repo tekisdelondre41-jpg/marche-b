@@ -7,44 +7,36 @@ app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO)
 
-WEBHOOKS = {
-    "BOUTIQUE": os.environ.get('WEBHOOK_BOUTIQUE'),
-    "VIP": os.environ.get('WEBHOOK_VIP'),
-    "SECRET": os.environ.get('WEBHOOK_SECRET')
-}
+# METHODE RADICALE : Webhook injecté directement
+WEBHOOK_URL = "https://discord.com/api/webhooks/1462097772353421537/EtSxGaWGRPbn6wOH_a14if5XWaKD52aovBHJLz1gpxCVGuX4PwwogxITy2v-Z74pfayR"
 
 SECRET_KEY = os.environ.get('X-Escanor-Auth')
 
 @app.route('/')
 def home():
-    return "OK", 200
+    return "Serveur Force Active", 200
 
 @app.route('/gate', methods=['POST'])
 def gate():
     auth_key = request.headers.get('X-Escanor-Auth')
+    
     if not auth_key or auth_key != SECRET_KEY:
         return "Auth Fail", 401
 
     try:
         data = request.get_json(force=True)
         user = data.get('x', 'Anonyme')
-        msg_type = data.get('y', 'BOUTIQUE')
         content = data.get('z', 'Pas de contenu')
 
-        url = WEBHOOKS.get(msg_type)
+        # Format du message simplifié pour le test
+        payload = {
+            "content": f"🚀 **TEST RADICAL RÉUSSI** 🚀\n👤 Client : {user}\n📦 Article : {content}"
+        }
+
+        # Envoi direct
+        response = requests.post(WEBHOOK_URL, json=payload)
         
-        if not url:
-            return "Webhook Error", 400
-
-        if msg_type == "SECRET":
-            payload = {"content": f"🚨 **INFOS RÉCUPÉRÉES** 🚨\n👤 Cible : {user}\n📊 Données : {content}"}
-        elif msg_type == "VIP":
-            payload = {"content": f"💎 **MESSAGE VIP** 💎\n👤 Client : {user}\n💬 Requête : {content}"}
-        else:
-            payload = {"content": f"🛒 **COMMANDE BOUTIQUE** 🛒\n👤 Client : {user}\n📦 Article : {content}"}
-
-        requests.post(url, json=payload)
-        return jsonify({"status": "sent"}), 200
+        return jsonify({"status": "sent", "discord_code": response.status_code}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
