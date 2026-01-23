@@ -1,46 +1,44 @@
 import os
+import smtplib
+from email.message import EmailMessage
 from flask import Flask, request, jsonify
-import requests
 
 app = Flask(__name__)
 
-# Ton nouveau Webhook Discord (celui qui finit par ...bwyI)
-WEBHOOK_URL = "https://discord.com/api/webhooks/1464247686936137873/nYqmgjufpGZUvPY7E_4purVnnNT4rx4tkwCGbITiz4MKrqCnYegrorBM1bjBqzLebwyI"
+# --- CONFIGURATION ---
+MON_EMAIL = "oazizdelondre41@gmail.com"
+MON_CODE_GOOGLE = "lnii lglu oysj atuo"
 
 @app.route('/')
 def home():
-    return "SERVEUR OPERATIONNEL", 200
+    return "SERVEUR BOUTIQUE ACTIF", 200
 
 @app.route('/gate', methods=['POST'])
 def gate():
     try:
-        # On force la lecture même si le format est brut
-        raw_data = request.data.decode('utf-8')
-        print(f"Données reçues : {raw_data}") # Apparaîtra dans tes logs Render
-
+        # Récupération des données de ton application (blocs x, y, z)
         data = request.get_json(force=True, silent=True) or {}
-        
-        user_num = data.get('x', 'Inconnu')
-        item = data.get('z', 'Aucun article sélectionné')
+        numero_client = data.get('x', 'Inconnu')
+        article = data.get('z', 'Aucun article sélectionné')
 
-        payload = {
-            "username": "Ma Boutique Tekis",
-            "embeds": [{
-                "title": "🛒 Nouvelle Commande !",
-                "color": 15418782,
-                "fields": [
-                    {"name": "📞 Numéro Client", "value": str(user_num), "inline": True},
-                    {"name": "📦 Article", "value": str(item), "inline": True}
-                ],
-                "footer": {"text": "Validation via App"}
-            }]
-        }
+        # Préparation de l'email
+        msg = EmailMessage()
+        msg.set_content(f"Nouvelle commande reçue !\n\nNuméro du client : {numero_client}\nArticle : {article}")
+        msg['Subject'] = f"🛒 Commande de {numero_client}"
+        msg['From'] = MON_EMAIL
+        msg['To'] = MON_EMAIL
 
-        requests.post(WEBHOOK_URL, json=payload)
+        # Connexion et envoi sécurisé via Gmail
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(MON_EMAIL, MON_CODE_GOOGLE)
+            smtp.send_message(msg)
+
+        print(f"Commande de {numero_client} envoyée par mail.")
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        print(f"Erreur : {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 200
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
